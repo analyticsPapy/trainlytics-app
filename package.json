@@ -1,0 +1,23 @@
+{
+  "name": "trainlytics",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Trainlytics - Training Analytics Application",
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && docker-compose up",
+    "build:frontend": "cd frontend && npm run build",
+    "install:frontend": "cd frontend && npm install",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down"
+  },
+  "workspaces": [
+    "frontend"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/analyticsPapy/trainlytics-app.git"
+  },
+  "author": "",
+  "license": "MIT"
+}
