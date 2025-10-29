@@ -136,15 +136,21 @@ async def get_current_user_id(current_user: dict = Depends(get_current_user)) ->
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verify a password against its hash.
-    Note: Supabase handles password hashing, so this is mainly for compatibility.
+    Note: This function should not be used directly. Supabase handles all password
+    verification internally through its authentication API.
 
     Args:
         plain_password: The plain text password
         hashed_password: The hashed password
 
     Returns:
-        True if password matches, False otherwise
+        Never returns - always raises NotImplementedError
+
+    Raises:
+        NotImplementedError: This function is deprecated and should not be used.
+                           Use Supabase authentication API instead.
     """
-    # Supabase handles password verification internally
-    # This function is here for potential future use
-    return True
+    raise NotImplementedError(
+        "Password verification should be handled by Supabase authentication API. "
+        "Do not use this function directly. Use supabase.auth.sign_in_with_password() instead."
+    )

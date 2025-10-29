@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Activity,
@@ -15,6 +15,9 @@ import { Layout } from '../components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/card';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
+import { useAuth } from '../hooks/useAuth';
+import { api } from '../services/api';
+import { Activity as ActivityType, ConnectionPublic } from '../types/api';
 
 interface StatCardProps {
   title: string;
@@ -49,41 +52,77 @@ function StatCard({ title, value, change, trend, icon: Icon, gradient }: StatCar
 }
 
 export function AthleteDashboard() {
-  const recentWorkouts = [
-    {
-      id: 1,
-      type: 'Running',
-      duration: '45 min',
-      distance: '8.5 km',
-      calories: 420,
-      date: '2025-10-28',
-      intensity: 'high'
-    },
-    {
-      id: 2,
-      type: 'Cycling',
-      duration: '60 min',
-      distance: '25 km',
-      calories: 520,
-      date: '2025-10-27',
-      intensity: 'medium'
-    },
-    {
-      id: 3,
-      type: 'Strength',
-      duration: '30 min',
-      distance: '-',
-      calories: 280,
-      date: '2025-10-26',
-      intensity: 'high'
-    }
-  ];
+  const { user: _user } = useAuth();
+  const [activities, setActivities] = useState<ActivityType[]>([]);
+  const [_connections, setConnections] = useState<ConnectionPublic[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [_error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Fetch recent activities
+        const activitiesData = await api.activities.getActivities({
+          limit: 10,
+        });
+        setActivities(activitiesData);
+
+        // Fetch connections
+        const connectionsData = await api.connections.getConnections();
+        setConnections(connectionsData);
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+        setError('Failed to load dashboard data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Calculate stats from activities
+  const stats = {
+    totalDistance: activities.reduce((sum, act) => sum + (act.distance || 0), 0) / 1000, // Convert to km
+    totalDuration: activities.reduce((sum, act) => sum + (act.duration || 0), 0) / 60, // Convert to minutes
+    totalCalories: activities.reduce((sum, act) => sum + (act.calories || 0), 0),
+    avgHeartRate: activities.length > 0
+      ? Math.round(activities.reduce((sum, act) => sum + (act.avg_heart_rate || 0), 0) / activities.length)
+      : 0,
+  };
+
+  // Format recent workouts for display
+  const recentWorkouts = activities.slice(0, 3).map(activity => ({
+    id: activity.id,
+    type: activity.activity_type,
+    duration: activity.duration ? `${Math.round(activity.duration / 60)} min` : '-',
+    distance: activity.distance ? `${(activity.distance / 1000).toFixed(1)} km` : '-',
+    calories: activity.calories || 0,
+    date: new Date(activity.start_time).toLocaleDateString(),
+    intensity: activity.avg_heart_rate && activity.avg_heart_rate > 150 ? 'high' : 'medium'
+  }));
 
   const weeklyGoals = [
-    { name: 'Distance', current: 45, target: 50, unit: 'km' },
-    { name: 'Duration', current: 180, target: 240, unit: 'min' },
-    { name: 'Workouts', current: 4, target: 5, unit: 'sessions' }
+    { name: 'Distance', current: Math.round(stats.totalDistance), target: 50, unit: 'km' },
+    { name: 'Duration', current: Math.round(stats.totalDuration), target: 240, unit: 'min' },
+    { name: 'Workouts', current: activities.length, target: 5, unit: 'sessions' }
   ];
+
+  if (isLoading) {
+    return (
+      <Layout type="athlete">
+        <div className="container py-8 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout type="athlete">
@@ -112,7 +151,7 @@ export function AthleteDashboard() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Distance"
-            value="45.2 km"
+            value={`${stats.totalDistance.toFixed(1)} km`}
             change="+12%"
             trend="up"
             icon={TrendingUp}
@@ -120,7 +159,7 @@ export function AthleteDashboard() {
           />
           <StatCard
             title="Active Time"
-            value="5h 30m"
+            value={`${Math.floor(stats.totalDuration / 60)}h ${Math.round(stats.totalDuration % 60)}m`}
             change="+8%"
             trend="up"
             icon={Clock}
@@ -128,7 +167,7 @@ export function AthleteDashboard() {
           />
           <StatCard
             title="Calories Burned"
-            value="2,340"
+            value={stats.totalCalories.toLocaleString()}
             change="+15%"
             trend="up"
             icon={Flame}
@@ -136,7 +175,7 @@ export function AthleteDashboard() {
           />
           <StatCard
             title="Avg Heart Rate"
-            value="142 bpm"
+            value={stats.avgHeartRate > 0 ? `${stats.avgHeartRate} bpm` : 'N/A'}
             change="-3%"
             trend="down"
             icon={Heart}
@@ -223,12 +262,12 @@ export function AthleteDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentWorkouts.map((workout) => (
+              {recentWorkouts.map((workout, index) => (
                 <motion.div
                   key={workout.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: workout.id * 0.1 }}
+                  transition={{ delay: index * 0.1 }}
                   className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-4">

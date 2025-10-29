@@ -2,6 +2,7 @@
 Application configuration using Pydantic Settings.
 """
 from typing import Optional
+from pydantic import field_validator, ValidationInfo
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,6 +27,30 @@ class Settings(BaseSettings):
     jwt_secret: str
     jwt_algorithm: str = "HS256"
     jwt_expiration_hours: int = 24
+
+    @field_validator('jwt_secret')
+    @classmethod
+    def validate_jwt_secret(cls, v: str, info: ValidationInfo) -> str:
+        """
+        Validate JWT secret has sufficient length for security.
+
+        Args:
+            v: The JWT secret value
+            info: Validation context info
+
+        Returns:
+            The validated JWT secret
+
+        Raises:
+            ValueError: If JWT secret is too short
+        """
+        min_length = 32
+        if len(v) < min_length:
+            raise ValueError(
+                f"JWT_SECRET must be at least {min_length} characters long for security. "
+                f"Current length: {len(v)}. Please use a strong, random secret key."
+            )
+        return v
 
     # OAuth providers - Garmin
     garmin_client_id: Optional[str] = None

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Users,
@@ -13,8 +14,44 @@ import { Layout } from '../components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/card';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
+import { useAuth } from '../hooks/useAuth';
 
 export function CoachDashboard() {
+  const { user: _user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [_error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        // Fetch coach-specific data here when available
+        // For now, we'll just simulate loading
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (err) {
+        console.error('Failed to fetch coach data:', err);
+        setError('Failed to load coach data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <Layout type="coach">
+        <div className="container py-8 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
   const athletes = [
     {
       id: 1,
