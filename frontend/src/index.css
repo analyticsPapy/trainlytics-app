@@ -10,42 +10,56 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    /* Trainlytics Brand Colors - Sports Analytics Theme */
+    --primary: 142 76% 36%; /* Athletic Green */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 91% 60%; /* Dynamic Blue */
+    --secondary-foreground: 0 0% 100%;
+    --accent: 45 93% 47%; /* Energy Gold */
+    --accent-foreground: 222.2 47.4% 11.2%;
+
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 142 76% 36%;
     --radius: 0.5rem;
+
+    /* Premium Tier Colors */
+    --pro: 280 100% 70%; /* Premium Purple */
+    --lab: 33 100% 50%; /* Lab Orange */
+    --connect: 195 100% 50%; /* Connect Cyan */
   }
 
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 217.2 32.6% 12%;
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+
+    --primary: 142 76% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 91% 65%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 45 93% 52%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
+    --border: 217.2 32.6% 20%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --ring: 142 76% 42%;
+
+    --pro: 280 100% 75%;
+    --lab: 33 100% 55%;
+    --connect: 195 100% 55%;
   }
 }
 
@@ -55,5 +69,46 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/50 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary;
+  }
+}
+
+@layer components {
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+  }
+
+  .gradient-pro {
+    background: linear-gradient(135deg, hsl(var(--pro)) 0%, hsl(var(--primary)) 100%);
+  }
+
+  .gradient-lab {
+    background: linear-gradient(135deg, hsl(var(--lab)) 0%, hsl(var(--accent)) 100%);
+  }
+
+  .gradient-connect {
+    background: linear-gradient(135deg, hsl(var(--connect)) 0%, hsl(var(--secondary)) 100%);
+  }
+
+  .glass-effect {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
   }
 }
