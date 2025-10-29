@@ -1,380 +1,385 @@
+/**
+ * Connect Page - Manage OAuth Connections
+ * Allows users to connect and manage third-party integrations
+ */
+
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Link as LinkIcon,
-  Zap,
   CheckCircle2,
-  Clock,
-  Shield,
   RefreshCw,
-  Smartphone,
-  Activity,
-  Sparkles
+  Trash2,
+  AlertCircle,
 } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/card';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
+import { useAuth } from '../hooks/useAuth';
+import { api } from '../services/api';
+import { ProviderType, ConnectionPublic, ApiError } from '../types/api';
+
+interface Integration {
+  provider: ProviderType;
+  name: string;
+  logo: string;
+  description: string;
+  category: string;
+}
 
 export function ConnectPage() {
-  const integrations = [
+  const { user: _user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const [connections, setConnections] = useState<ConnectionPublic[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [connectingProvider, setConnectingProvider] = useState<ProviderType | null>(null);
+
+  const integrations: Integration[] = [
     {
-      name: 'Strava',
-      logo: '🚴',
-      description: 'Sync your rides, runs, and activities automatically',
-      status: 'available',
-      category: 'Social & Tracking'
-    },
-    {
+      provider: ProviderType.GARMIN,
       name: 'Garmin',
       logo: '⌚',
       description: 'Connect your Garmin devices for automatic workout sync',
-      status: 'available',
-      category: 'Devices'
+      category: 'Devices',
     },
     {
+      provider: ProviderType.STRAVA,
+      name: 'Strava',
+      logo: '🚴',
+      description: 'Sync your rides, runs, and activities automatically',
+      category: 'Social & Tracking',
+    },
+    {
+      provider: ProviderType.POLAR,
       name: 'Polar',
       logo: '🏃',
       description: 'Import training data from Polar Flow',
-      status: 'available',
-      category: 'Devices'
+      category: 'Devices',
     },
     {
-      name: 'Zwift',
-      logo: '🚴',
-      description: 'Sync your virtual cycling and running workouts',
-      status: 'available',
-      category: 'Virtual Training'
-    },
-    {
-      name: 'Apple Health',
-      logo: '❤️',
-      description: 'Integrate with Apple Health and Apple Watch',
-      status: 'available',
-      category: 'Health Platforms'
-    },
-    {
-      name: 'Google Fit',
-      logo: '🏋️',
-      description: 'Sync with Google Fit and WearOS devices',
-      status: 'available',
-      category: 'Health Platforms'
-    },
-    {
+      provider: ProviderType.WAHOO,
       name: 'Wahoo',
       logo: '📱',
       description: 'Connect Wahoo devices and sensors',
-      status: 'available',
-      category: 'Devices'
+      category: 'Devices',
     },
     {
-      name: 'TrainingPeaks',
-      logo: '📈',
-      description: 'Import structured workouts and training plans',
-      status: 'coming-soon',
-      category: 'Training Platforms'
-    },
-    {
-      name: 'Suunto',
+      provider: ProviderType.COROS,
+      name: 'Coros',
       logo: '⌚',
-      description: 'Sync activities from Suunto watches',
-      status: 'available',
-      category: 'Devices'
-    }
+      description: 'Sync activities from Coros watches',
+      category: 'Devices',
+    },
+    {
+      provider: ProviderType.FITBIT,
+      name: 'Fitbit',
+      logo: '❤️',
+      description: 'Integrate with Fitbit devices and app',
+      category: 'Health Platforms',
+    },
   ];
 
-  const features = [
-    {
-      icon: RefreshCw,
-      title: 'Auto-Sync',
-      description: 'Workouts automatically sync in real-time across all connected platforms'
-    },
-    {
-      icon: Shield,
-      title: 'Secure Connection',
-      description: 'Bank-level encryption for all your health and training data'
-    },
-    {
-      icon: Clock,
-      title: 'Historical Import',
-      description: 'Import your complete training history from connected services'
-    },
-    {
-      icon: Zap,
-      title: 'Instant Updates',
-      description: 'Changes reflect immediately across all integrated platforms'
-    }
-  ];
+  // Load connections on mount
+  useEffect(() => {
+    fetchConnections();
+  }, []);
 
-  const benefits = [
-    'Never manually log workouts again',
-    'One central hub for all your training data',
-    'Seamless cross-platform experience',
-    'Automatic backup of your training history',
-    'Real-time data synchronization',
-    'Support for multiple devices simultaneously'
-  ];
+  // Handle OAuth callback
+  useEffect(() => {
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
+    const error = searchParams.get('error');
+
+    if (error) {
+      setError(`OAuth error: ${error}`);
+      return;
+    }
+
+    if (code && state) {
+      handleOAuthCallback(code, state);
+    }
+  }, [searchParams]);
+
+  /**
+   * Fetch user's connections
+   */
+  const fetchConnections = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await api.connections.getConnections();
+      setConnections(data);
+    } catch (err) {
+      console.error('Failed to fetch connections:', err);
+      setError('Failed to load connections');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Handle OAuth callback
+   */
+  const handleOAuthCallback = async (code: string, state: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await api.oauth.handleCallback({ code, state });
+
+      if (response.success) {
+        // Refresh connections list
+        await fetchConnections();
+
+        // Clear URL parameters
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else {
+        setError(response.message || 'Failed to connect');
+      }
+    } catch (err) {
+      console.error('OAuth callback error:', err);
+      const errorMessage = err instanceof ApiError ? err.message : 'Failed to complete connection';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Initiate OAuth connection
+   */
+  const handleConnect = async (provider: ProviderType) => {
+    try {
+      setConnectingProvider(provider);
+      setError(null);
+
+      const response = await api.oauth.initOAuth({
+        provider,
+        redirect_uri: `${window.location.origin}/connect`,
+      });
+
+      // Redirect to OAuth authorization URL
+      window.location.href = response.authorization_url;
+    } catch (err) {
+      console.error('Failed to initiate OAuth:', err);
+      const errorMessage = err instanceof ApiError ? err.message : 'Failed to start connection';
+      setError(errorMessage);
+      setConnectingProvider(null);
+    }
+  };
+
+  /**
+   * Disconnect a connection
+   */
+  const handleDisconnect = async (connectionId: string) => {
+    if (!confirm('Are you sure you want to disconnect this integration?')) {
+      return;
+    }
+
+    try {
+      setError(null);
+      await api.connections.deleteConnection(connectionId);
+      await fetchConnections();
+    } catch (err) {
+      console.error('Failed to disconnect:', err);
+      const errorMessage = err instanceof ApiError ? err.message : 'Failed to disconnect';
+      setError(errorMessage);
+    }
+  };
+
+  /**
+   * Sync a connection
+   */
+  const handleSync = async (connectionId: string) => {
+    try {
+      setError(null);
+      await api.connections.syncConnection(connectionId);
+      await fetchConnections();
+    } catch (err) {
+      console.error('Failed to sync:', err);
+      const errorMessage = err instanceof ApiError ? err.message : 'Failed to sync';
+      setError(errorMessage);
+    }
+  };
+
+  /**
+   * Check if provider is connected
+   */
+  const isConnected = (provider: ProviderType): ConnectionPublic | undefined => {
+    return connections.find((conn) => conn.provider === provider && conn.is_active);
+  };
 
   return (
-    <Layout type="public">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 md:py-32">
-        <div className="absolute inset-0 gradient-connect opacity-10" />
-        <div className="container relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-auto max-w-4xl text-center"
-          >
-            <div className="mb-6 flex justify-center">
-              <Badge variant="connect" className="px-4 py-2 text-sm">
-                <LinkIcon className="mr-2 h-4 w-4" />
-                Seamless Integration
-              </Badge>
-            </div>
-
-            <h1 className="text-4xl font-bold tracking-tight sm:text-6xl md:text-7xl mb-6">
-              <span className="gradient-connect bg-clip-text text-transparent">
-                Trainlytics Connect
-              </span>
-            </h1>
-
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Connect with your favorite fitness platforms and devices.
-              All your training data, automatically synced in one place.
-            </p>
-
-            <div className="flex flex-wrap justify-center gap-4">
-              <Button size="xl" variant="connect" className="gap-2">
-                <Sparkles className="h-5 w-5" />
-                Start Connecting
-              </Button>
-              <Button size="xl" variant="outline">
-                View All Integrations
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-20 bg-muted/50">
-        <div className="container">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">
-              Why Connect?
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Powerful integration features that make your life easier
+    <Layout type="athlete">
+      <div className="container py-8 space-y-8">
+        {/* Header */}
+        <div className="flex flex-col gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Connected Services</h1>
+            <p className="text-muted-foreground">
+              Connect your favorite fitness platforms and devices to sync your training data automatically
             </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-              >
-                <Card className="text-center h-full hover:shadow-lg transition-all hover:border-cyan-500/50">
-                  <CardHeader>
-                    <div className="flex justify-center mb-4">
-                      <div className="p-3 rounded-lg bg-cyan-500/10">
-                        <feature.icon className="h-6 w-6 text-cyan-500" />
-                      </div>
-                    </div>
-                    <CardTitle className="text-xl">{feature.title}</CardTitle>
-                    <CardDescription>{feature.description}</CardDescription>
-                  </CardHeader>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
         </div>
-      </section>
 
-      {/* Integrations Grid */}
-      <section className="py-20">
-        <div className="container">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">
-              Supported Integrations
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Connect with the platforms and devices you already use
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {integrations.map((integration, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.05 }}
-              >
-                <Card className="hover:shadow-lg transition-all cursor-pointer">
-                  <CardHeader>
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="text-4xl">{integration.logo}</div>
-                      <Badge
-                        variant={integration.status === 'available' ? 'default' : 'secondary'}
-                        className="text-xs"
-                      >
-                        {integration.status === 'available' ? 'Available' : 'Coming Soon'}
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-xl">{integration.name}</CardTitle>
-                    <CardDescription className="text-sm">
-                      {integration.description}
-                    </CardDescription>
-                    <div className="pt-2">
-                      <Badge variant="outline" className="text-xs">
-                        {integration.category}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {integration.status === 'available' ? (
-                      <Button variant="outline" className="w-full gap-2" size="sm">
-                        <LinkIcon className="h-4 w-4" />
-                        Connect
-                      </Button>
-                    ) : (
-                      <Button variant="ghost" className="w-full" size="sm" disabled>
-                        Notify Me
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section className="py-20 bg-muted/50">
-        <div className="container max-w-4xl">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">
-              Benefits of Connect
-            </h2>
-          </div>
-
-          <Card>
-            <CardContent className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {benefits.map((benefit, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="flex items-start gap-3"
-                  >
-                    <CheckCircle2 className="h-5 w-5 text-cyan-500 shrink-0 mt-0.5" />
-                    <span>{benefit}</span>
-                  </motion.div>
-                ))}
+        {/* Error Message */}
+        {error && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 text-red-800">
+                <AlertCircle className="h-5 w-5" />
+                <p className="font-medium">{error}</p>
               </div>
             </CardContent>
           </Card>
-        </div>
-      </section>
+        )}
 
-      {/* How It Works */}
-      <section className="py-20">
-        <div className="container max-w-4xl">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">
-              How It Works
-            </h2>
+        {/* Loading State */}
+        {isLoading && !error && (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+              <p className="mt-4 text-gray-600">Loading connections...</p>
+            </div>
           </div>
+        )}
 
-          <div className="space-y-6">
-            {[
-              {
-                step: '1',
-                title: 'Choose Your Platforms',
-                description: 'Select the devices and services you want to connect',
-                icon: Smartphone
-              },
-              {
-                step: '2',
-                title: 'Authorize Access',
-                description: 'Securely grant Trainlytics permission to access your data',
-                icon: Shield
-              },
-              {
-                step: '3',
-                title: 'Auto-Sync Begins',
-                description: 'Your workouts automatically sync to Trainlytics in real-time',
-                icon: RefreshCw
-              },
-              {
-                step: '4',
-                title: 'Train & Analyze',
-                description: 'Focus on training while we handle the data synchronization',
-                icon: Activity
-              }
-            ].map((item, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-              >
-                <Card>
-                  <CardContent className="flex items-start gap-4 p-6">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-cyan-500/10 text-xl font-bold text-cyan-500">
-                      {item.step}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <item.icon className="h-5 w-5 text-cyan-500" />
-                        <h3 className="text-xl font-semibold">{item.title}</h3>
+        {/* Integrations Grid */}
+        {!isLoading && (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {integrations.map((integration) => {
+              const connection = isConnected(integration.provider);
+              const isConnecting = connectingProvider === integration.provider;
+
+              return (
+                <motion.div
+                  key={integration.provider}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Card className="relative h-full">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="text-4xl">{integration.logo}</div>
+                          <div>
+                            <CardTitle className="text-lg">{integration.name}</CardTitle>
+                            <Badge variant="secondary" className="mt-1 text-xs">
+                              {integration.category}
+                            </Badge>
+                          </div>
+                        </div>
+                        {connection && (
+                          <CheckCircle2 className="h-6 w-6 text-green-600" />
+                        )}
                       </div>
-                      <p className="text-muted-foreground">{item.description}</p>
-                    </div>
-                    <CheckCircle2 className="h-6 w-6 text-cyan-500 shrink-0" />
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription className="mb-4">
+                        {integration.description}
+                      </CardDescription>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-muted/50">
-        <div className="container">
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 gradient-connect opacity-10" />
-            <CardContent className="relative p-12 text-center">
-              <LinkIcon className="h-12 w-12 text-cyan-500 mx-auto mb-4" />
-              <h2 className="text-3xl font-bold mb-4">
-                Ready to Connect?
-              </h2>
-              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Start syncing your workouts automatically. No more manual data entry.
-              </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Button size="xl" variant="connect">
-                  Get Started
-                </Button>
-                <Button size="xl" variant="outline">
-                  View Documentation
-                </Button>
+                      {connection ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm text-muted-foreground">
+                            <span>Last synced:</span>
+                            <span>
+                              {connection.last_sync_at
+                                ? new Date(connection.last_sync_at).toLocaleDateString()
+                                : 'Never'}
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleSync(connection.id)}
+                              className="flex-1 gap-2"
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                              Sync
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDisconnect(connection.id)}
+                              className="gap-2 text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Disconnect
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="gradient"
+                          className="w-full gap-2"
+                          onClick={() => handleConnect(integration.provider)}
+                          disabled={isConnecting}
+                        >
+                          {isConnecting ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              Connecting...
+                            </>
+                          ) : (
+                            <>
+                              <LinkIcon className="h-4 w-4" />
+                              Connect
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Info Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>About Connections</CardTitle>
+            <CardDescription>
+              How connected services work with Trainlytics
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <h3 className="font-medium mb-2">Secure & Private</h3>
+                <p className="text-sm text-muted-foreground">
+                  All connections use secure OAuth authentication. We never store your passwords.
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+              <div>
+                <h3 className="font-medium mb-2">Automatic Sync</h3>
+                <p className="text-sm text-muted-foreground">
+                  Once connected, your activities are automatically synced in real-time.
+                </p>
+              </div>
+              <div>
+                <h3 className="font-medium mb-2">Disconnect Anytime</h3>
+                <p className="text-sm text-muted-foreground">
+                  You can disconnect any service at any time. Your data remains safe.
+                </p>
+              </div>
+              <div>
+                <h3 className="font-medium mb-2">Multiple Devices</h3>
+                <p className="text-sm text-muted-foreground">
+                  Connect as many devices and services as you want.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </Layout>
   );
 }
