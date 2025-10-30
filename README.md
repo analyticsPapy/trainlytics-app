@@ -1,6 +1,15 @@
 # Trainlytics
 
-Application d'analyse d'entraînement sportif avec intégration Garmin Connect.
+Plateforme complète d'analyse d'entraînement sportif avec intégrations multi-appareils.
+
+## 🎯 Fonctionnalités
+
+- 🏃 **Dashboard Athlète**: Suivi des entraînements, statistiques, objectifs hebdomadaires
+- 👨‍🏫 **Dashboard Coach**: Gestion des athlètes, planification d'entraînements
+- 🔗 **Connexions Multi-Appareils**: Garmin, Strava, Polar, Wahoo, Coros, Fitbit
+- 📊 **Analytics Avancées**: Métriques détaillées, tendances, analyse de performance
+- 🔐 **Authentification Sécurisée**: JWT + Supabase Auth avec refresh automatique
+- 🌐 **API RESTful**: Backend FastAPI complet avec documentation Swagger
 
 ## 📁 Structure du Projet
 
@@ -58,6 +67,7 @@ trainlytics-app/
 
 - Node.js 18+ et npm
 - Python 3.11+
+- Compte Supabase (gratuit sur https://supabase.com)
 - Docker et Docker Compose (optionnel)
 
 ### Installation
@@ -158,11 +168,65 @@ JWT_SECRET=votre_secret_jwt
 - Garmin Connect API
 - Pydantic
 
+## 🔐 Configuration Supabase
+
+### 1. Créer un Projet Supabase
+
+1. Allez sur https://supabase.com et créez un compte
+2. Créez un nouveau projet
+3. Notez votre URL et vos clés API
+
+### 2. Appliquer la Migration
+
+Voir `backend/migrations/001_adapt_schema.sql` pour le schéma complet.
+
+1. Allez dans le **SQL Editor** de Supabase
+2. Copiez et exécutez le fichier de migration
+3. Vérifiez que les tables sont créées
+
+### 3. Configurer les Variables d'Environnement
+
+Utilisez les fichiers .env créés avec les valeurs de votre projet Supabase.
+
+**Pour tester la configuration:**
+```bash
+cd backend
+python test_env.py
+```
+
+## 🔗 Intégrations OAuth
+
+| Provider | Status | Docs |
+|----------|--------|------|
+| Garmin | ✅ | [developer.garmin.com](https://developer.garmin.com) |
+| Strava | ✅ | [developers.strava.com](https://developers.strava.com) |
+| Polar | ✅ | [polar.com/accesslink-api](https://www.polar.com/accesslink-api) |
+| Wahoo | ✅ | [api.wahooligan.com](https://api.wahooligan.com) |
+| Coros | ✅ | [open.coros.com](https://open.coros.com) |
+| Fitbit | ✅ | [dev.fitbit.com](https://dev.fitbit.com) |
+
 ## 📖 Documentation
 
+- [Deployment Guide](./DEPLOYMENT.md) - Guide complet de déploiement en production
 - [Project Summary](./projectsummary.md) - Vue d'ensemble du projet
 - [Quick Start](./quickstart.md) - Guide de démarrage rapide
 - [Infrastructure](./infrastructure/Readme.md) - Documentation infrastructure
+- [API Docs](http://localhost:8000/api/docs) - Documentation Swagger (après démarrage du backend)
+
+## 🚢 Déploiement
+
+Consultez [DEPLOYMENT.md](./DEPLOYMENT.md) pour déployer en production:
+- Frontend: Cloudflare Pages
+- Backend: Railway / Render / Heroku
+- Database: Supabase PostgreSQL
+
+## 🛡️ Sécurité
+
+- ✅ JWT avec validation stricte (min 32 caractères)
+- ✅ Row Level Security (RLS) sur toutes les tables
+- ✅ OAuth 2.0 pour les intégrations tierces
+- ✅ CORS configuré
+- ✅ Mots de passe hashés via Supabase Auth
 
 ## 🤝 Contribution
 
@@ -171,3 +235,7 @@ Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou un
 ## 📝 Licence
 
 MIT
+
+---
+
+🤖 Généré avec [Claude Code](https://claude.com/claude-code)
