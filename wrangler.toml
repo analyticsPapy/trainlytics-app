@@ -1,23 +1,20 @@
-# Cloudflare Workers/Pages Configuration for Trainlytics
-# https://developers.cloudflare.com/workers/wrangler/configuration/
+# Cloudflare Pages Configuration for Trainlytics
+# https://developers.cloudflare.com/pages/
+
+# Note: For Cloudflare Pages, build configuration is done in the dashboard, not here.
+# The [build] section is NOT supported by Pages.
 
 name = "trainlytics-frontend"
 compatibility_date = "2024-01-01"
 
-# Pages configuration
-pages_build_output_dir = "frontend/dist"
-
-[build]
-command = "cd frontend && npm install && npm run build"
-
-[build.upload]
-format = "service-worker"
+# Pages build output directory (for reference)
+# Configure this in Cloudflare Pages Dashboard:
+# Build command: cd frontend && npm install && npm run build
+# Build output directory: frontend/dist
 
 # Environment variables for production
-[env.production.vars]
-VITE_APP_ENV = "production"
-
-# Note: Sensitive variables should be set in Cloudflare Dashboard
+# These should be set in Cloudflare Pages Dashboard:
+# - VITE_APP_ENV = "production"
 # - VITE_API_URL
 # - VITE_SUPABASE_URL
 # - VITE_SUPABASE_ANON_KEY
