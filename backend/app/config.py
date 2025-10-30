@@ -1,6 +1,7 @@
 """
 Application configuration using Pydantic Settings.
 """
+from pathlib import Path
 from typing import Optional
 from pydantic import field_validator, ValidationInfo
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -87,18 +88,30 @@ class Settings(BaseSettings):
     oauth_state_expiration_minutes: int = 10
 
     # CORS settings
-    cors_origins: list[str] = [
+    cors_origins: str | list[str] = [
         "http://localhost:5173",
         "http://localhost:3000",
         "http://localhost:8000",
     ]
+
+    @field_validator('cors_origins', mode='before')
+    @classmethod
+    def parse_cors_origins(cls, v: str | list[str]) -> list[str]:
+        """
+        Parse CORS origins from string or list.
+
+        Accepts comma-separated string or list of strings.
+        """
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(',') if origin.strip()]
+        return v
 
     # Server settings
     host: str = "0.0.0.0"
     port: int = 8000
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(Path(__file__).parent / ".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore"
