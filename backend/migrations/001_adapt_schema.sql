@@ -209,53 +209,65 @@ ALTER TABLE public.activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workouts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.athletes ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (Supabase doesn't support IF NOT EXISTS for policies)
+DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
+DROP POLICY IF EXISTS "Users can view own connections" ON public.device_connections;
+DROP POLICY IF EXISTS "Users can manage own connections" ON public.device_connections;
+DROP POLICY IF EXISTS "Users can view own activities" ON public.activities;
+DROP POLICY IF EXISTS "Users can manage own activities" ON public.activities;
+DROP POLICY IF EXISTS "Users can view own workouts" ON public.workouts;
+DROP POLICY IF EXISTS "Users can manage own workouts" ON public.workouts;
+DROP POLICY IF EXISTS "Athletes can view own records" ON public.athletes;
+DROP POLICY IF EXISTS "Coaches can manage athletes" ON public.athletes;
+
 -- Users can read their own profile
-CREATE POLICY IF NOT EXISTS "Users can view own profile"
+CREATE POLICY "Users can view own profile"
     ON public.users FOR SELECT
     USING (auth.uid() = id);
 
 -- Users can update their own profile
-CREATE POLICY IF NOT EXISTS "Users can update own profile"
+CREATE POLICY "Users can update own profile"
     ON public.users FOR UPDATE
     USING (auth.uid() = id);
 
 -- Users can view their own connections
-CREATE POLICY IF NOT EXISTS "Users can view own connections"
+CREATE POLICY "Users can view own connections"
     ON public.device_connections FOR SELECT
     USING (auth.uid() = user_id);
 
 -- Users can manage their own connections
-CREATE POLICY IF NOT EXISTS "Users can manage own connections"
+CREATE POLICY "Users can manage own connections"
     ON public.device_connections FOR ALL
     USING (auth.uid() = user_id);
 
 -- Users can view their own activities
-CREATE POLICY IF NOT EXISTS "Users can view own activities"
+CREATE POLICY "Users can view own activities"
     ON public.activities FOR SELECT
     USING (auth.uid() = user_id);
 
 -- Users can manage their own activities
-CREATE POLICY IF NOT EXISTS "Users can manage own activities"
+CREATE POLICY "Users can manage own activities"
     ON public.activities FOR ALL
     USING (auth.uid() = user_id);
 
 -- Users can view their own workouts
-CREATE POLICY IF NOT EXISTS "Users can view own workouts"
+CREATE POLICY "Users can view own workouts"
     ON public.workouts FOR SELECT
     USING (auth.uid() = user_id);
 
 -- Users can manage their own workouts
-CREATE POLICY IF NOT EXISTS "Users can manage own workouts"
+CREATE POLICY "Users can manage own workouts"
     ON public.workouts FOR ALL
     USING (auth.uid() = user_id);
 
 -- Athletes: users can view if they are the athlete or the coach
-CREATE POLICY IF NOT EXISTS "Athletes can view own records"
+CREATE POLICY "Athletes can view own records"
     ON public.athletes FOR SELECT
     USING (auth.uid() = user_id OR auth.uid() = coach_id);
 
 -- Coaches can manage their athletes
-CREATE POLICY IF NOT EXISTS "Coaches can manage athletes"
+CREATE POLICY "Coaches can manage athletes"
     ON public.athletes FOR ALL
     USING (auth.uid() = coach_id);
 
