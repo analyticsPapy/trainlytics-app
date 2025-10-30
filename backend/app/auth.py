@@ -29,10 +29,13 @@ async def signup(user_data: UserSignup):
         sb = supabase()
 
         # Sign up the user with Supabase Auth
+        # Note: email_confirm is set to False to allow immediate login without email verification
+        # In production, you may want to enable email confirmation for security
         auth_response = sb.auth.sign_up({
             "email": user_data.email,
             "password": user_data.password,
             "options": {
+                "email_confirm": False,
                 "data": {
                     "full_name": user_data.full_name,
                     "user_type": user_data.user_type.value
@@ -40,10 +43,10 @@ async def signup(user_data: UserSignup):
             }
         })
 
-        if not auth_response.user:
+        if not auth_response.user or not auth_response.session:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to create user account"
+                detail="Failed to create user account or session"
             )
 
         # Create user profile in public.user_profiles table
