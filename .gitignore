@@ -7,6 +7,13 @@ backend/**/__pycache__/
 *.pyo
 *.pyd
 
+# Python virtual environment
+venv/
+backend/venv/
+frontend/venv/
+env/
+.venv/
+
 # Environment variables
 .env
 .env.local
