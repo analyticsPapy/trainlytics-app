@@ -20,7 +20,7 @@ from app.schemas import (
 from app.config import settings
 from app.supabase import supabase
 from app.security import get_current_user_id
-from app.connections import get_or_create_connection
+from app.services.provider_service import ProviderConnectionService
 
 
 router = APIRouter(prefix="/oauth", tags=["OAuth"])
@@ -277,19 +277,20 @@ async def handle_strava_callback(code: str, user_id: str) -> dict:
         provider_email = athlete.get("email")
 
         # Create or update connection
-        connection = await get_or_create_connection(
-            user_id=user_id,
+        connection = await ProviderConnectionService.upsert_connection(
+            user_id=int(user_id),
             provider=ProviderType.STRAVA,
             provider_user_id=provider_user_id,
-            provider_email=provider_email,
             access_token=access_token,
             refresh_token=refresh_token,
             token_expires_at=expires_at,
-            scopes=["read", "activity:read_all", "profile:read_all"],
-            metadata={
+            provider_username=athlete.get("username"),
+            provider_email=provider_email,
+            provider_profile={
                 "athlete": athlete,
                 "token_type": token_data.get("token_type", "Bearer")
-            }
+            },
+            scopes="read,activity:read_all,profile:read_all"
         )
 
         return connection

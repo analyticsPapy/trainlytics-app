@@ -9,7 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from app.config import settings
-from app import auth, connections, oauth, activities, workout
+from app import auth, oauth, activities, workout
+from app.routes import provider_routes
 
 
 # Create FastAPI application
@@ -91,7 +92,7 @@ async def root():
 
 # Include routers
 app.include_router(auth.router, prefix=settings.api_prefix)
-app.include_router(connections.router, prefix=settings.api_prefix)
+app.include_router(provider_routes.router, prefix=settings.api_prefix)
 app.include_router(oauth.router, prefix=settings.api_prefix)
 app.include_router(activities.router, prefix=settings.api_prefix)
 app.include_router(workout.router, prefix=settings.api_prefix)
