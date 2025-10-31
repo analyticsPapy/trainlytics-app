@@ -331,7 +331,7 @@ async def disconnect_provider(
         sb = supabase()
 
         # Find and delete the connection
-        response = sb.table("user_connections").delete().eq(
+        response = sb.table("provider_connections").delete().eq(
             "user_id", user_id
         ).eq("provider", provider.value).execute()
 
