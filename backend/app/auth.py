@@ -11,7 +11,7 @@ from app.schemas import (
     UserProfileUpdate,
     MessageResponse
 )
-from app.supabase import supabase
+from app.supabase import supabase, supabase_admin
 from app.security import get_current_user, get_current_user_id
 
 
@@ -27,6 +27,7 @@ async def signup(user_data: UserSignup):
     """
     try:
         sb = supabase()
+        sb_admin = supabase_admin()
 
         # Sign up the user with Supabase Auth
         # Note: email_confirm is set to False to allow immediate login without email verification
@@ -49,7 +50,8 @@ async def signup(user_data: UserSignup):
                 detail="Failed to create user account or session"
             )
 
-        # Create user profile in public.user_profiles table
+        # Create user profile in public.users table (using admin client to bypass RLS)
+        # Note: user_profiles is a view, we need to insert into the underlying users table
         profile_data = {
             "id": auth_response.user.id,
             "email": user_data.email,
@@ -58,7 +60,7 @@ async def signup(user_data: UserSignup):
             "preferences": {}
         }
 
-        profile_response = sb.table("user_profiles").insert(profile_data).execute()
+        profile_response = sb_admin.table("users").insert(profile_data).execute()
 
         if not profile_response.data:
             # If profile creation fails, we should ideally clean up the auth user
