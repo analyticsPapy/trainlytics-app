@@ -21,7 +21,7 @@ router = APIRouter(prefix="/connections", tags=["Connections"])
 
 
 @router.get("", response_model=List[ConnectionPublic])
-async def get_user_connections(user_id: str = Depends(get_current_user_id)):
+async def get_provider_connections(user_id: str = Depends(get_current_user_id)):
     """
     Get all connections for the current user.
 
@@ -31,7 +31,7 @@ async def get_user_connections(user_id: str = Depends(get_current_user_id)):
         sb = supabase()
 
         # Query user connections
-        response = sb.table("user_connections").select(
+        response = sb.table("provider_connections").select(
             "id, provider, provider_email, is_active, last_sync_at, created_at"
         ).eq("user_id", user_id).execute()
 
@@ -57,7 +57,7 @@ async def get_connection(
     try:
         sb = supabase()
 
-        response = sb.table("user_connections").select(
+        response = sb.table("provider_connections").select(
             "id, provider, provider_email, is_active, last_sync_at, created_at"
         ).eq("id", connection_id).eq("user_id", user_id).execute()
 
@@ -92,7 +92,7 @@ async def get_connection_by_provider(
     try:
         sb = supabase()
 
-        response = sb.table("user_connections").select(
+        response = sb.table("provider_connections").select(
             "id, provider, provider_email, is_active, last_sync_at, created_at"
         ).eq("user_id", user_id).eq("provider", provider.value).execute()
 
@@ -123,7 +123,7 @@ async def update_connection(
         sb = supabase()
 
         # First verify the connection belongs to the user
-        check_response = sb.table("user_connections").select("id").eq(
+        check_response = sb.table("provider_connections").select("id").eq(
             "id", connection_id
         ).eq("user_id", user_id).execute()
 
@@ -143,7 +143,7 @@ async def update_connection(
             )
 
         # Update the connection
-        response = sb.table("user_connections").update(update_data).eq(
+        response = sb.table("provider_connections").update(update_data).eq(
             "id", connection_id
         ).eq("user_id", user_id).execute()
 
@@ -180,7 +180,7 @@ async def delete_connection(
         sb = supabase()
 
         # Verify and delete
-        response = sb.table("user_connections").delete().eq(
+        response = sb.table("provider_connections").delete().eq(
             "id", connection_id
         ).eq("user_id", user_id).execute()
 
@@ -215,7 +215,7 @@ async def sync_connection(
         sb = supabase()
 
         # Verify connection exists and belongs to user
-        response = sb.table("user_connections").select("*").eq(
+        response = sb.table("provider_connections").select("*").eq(
             "id", connection_id
         ).eq("user_id", user_id).execute()
 
@@ -234,7 +234,7 @@ async def sync_connection(
             )
 
         # Update last_sync_at
-        sb.table("user_connections").update({
+        sb.table("provider_connections").update({
             "last_sync_at": datetime.utcnow().isoformat()
         }).eq("id", connection_id).execute()
 
@@ -288,7 +288,7 @@ async def get_or_create_connection(
         sb = supabase()
 
         # Check if connection already exists for this user and provider
-        existing_response = sb.table("user_connections").select("*").eq(
+        existing_response = sb.table("provider_connections").select("*").eq(
             "user_id", user_id
         ).eq("provider", provider.value).execute()
 
@@ -307,7 +307,7 @@ async def get_or_create_connection(
         if existing_response.data and len(existing_response.data) > 0:
             # Update existing connection
             existing_connection = existing_response.data[0]
-            response = sb.table("user_connections").update(connection_data).eq(
+            response = sb.table("provider_connections").update(connection_data).eq(
                 "id", existing_connection["id"]
             ).execute()
 
@@ -317,7 +317,7 @@ async def get_or_create_connection(
             connection_data["user_id"] = user_id
             connection_data["provider"] = provider.value
 
-            response = sb.table("user_connections").insert(connection_data).execute()
+            response = sb.table("provider_connections").insert(connection_data).execute()
 
             return response.data[0]
 
